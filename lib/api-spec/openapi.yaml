@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Payment Email Sender API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: email
+    description: Email sending operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /send-payment-email:
+    post:
+      operationId: sendPaymentEmail
+      tags: [email]
+      summary: Send a payment notification email
+      description: Sends a professional payment email to the specified recipient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentEmailInput"
+      responses:
+        "200":
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailResult"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Failed to send email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /payment-history:
+    get:
+      operationId: getPaymentHistory
+      tags: [email]
+      summary: Get recent payment email history
+      description: Returns a list of recently sent payment emails
+      responses:
+        "200":
+          description: List of sent payment emails
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentRecord"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +81,74 @@ components:
           type: string
       required:
         - status
-
+    PaymentEmailInput:
+      type: object
+      required:
+        - recipientName
+        - recipientEmail
+        - amount
+        - verificationAmount
+      properties:
+        recipientName:
+          type: string
+          minLength: 1
+        recipientEmail:
+          type: string
+          format: email
+        amount:
+          type: number
+          minimum: 0.01
+        verificationAmount:
+          type: number
+          minimum: 0.01
+        note:
+          type: ["string", "null"]
+        senderName:
+          type: ["string", "null"]
+    SendEmailResult:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        emailId:
+          type: ["string", "null"]
+    PaymentRecord:
+      type: object
+      required:
+        - id
+        - recipientName
+        - recipientEmail
+        - amount
+        - sentAt
+      properties:
+        id:
+          type: integer
+        recipientName:
+          type: string
+        recipientEmail:
+          type: string
+        amount:
+          type: number
+        verificationAmount:
+          type: number
+        note:
+          type: ["string", "null"]
+        senderName:
+          type: ["string", "null"]
+        sentAt:
+          type: string
+          format: date-time
+        emailId:
+          type: ["string", "null"]
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
