@@ -6,102 +6,120 @@ interface PaymentEmailData {
   senderName: string | null;
 }
 
+function generateTransactionId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let id = "U-";
+  for (let i = 0; i < 17; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
 export function buildPaymentEmailHtml(data: PaymentEmailData): string {
   const { recipientName, amount, verificationAmount, note, senderName } = data;
-  const displayAmount = amount.toFixed(2);
-  const displayVerification = verificationAmount.toFixed(2);
+
+  const displayAmount = Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const displayVerification = Number(verificationAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fromLabel = senderName ? senderName : "Someone";
-  const currentDate = new Date().toLocaleDateString("en-US", {
+  const transactionId = generateTransactionId();
+  const transactionDate = new Date().toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
+
+  // PayPal "P" logo as inline SVG (data URI safe for email)
+  const paypalLogoLarge = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 48" width="40" height="48">
+    <path d="M32.5 8.5C31.2 3.5 27 1 21 1H9.5C8.5 1 7.7 1.7 7.5 2.7L2 36.7C1.9 37.4 2.4 38 3.1 38H10.5L12.3 26.8C12.5 25.8 13.3 25.1 14.3 25.1H17.8C25.5 25.1 31.4 21.8 33.1 13.7C33.2 13.1 33.3 12.5 33.3 12C33.3 10.7 33 9.6 32.5 8.5Z" fill="#003087"/>
+    <path d="M35.1 13.7C33.4 21.8 27.5 25.1 19.8 25.1H16.3C15.3 25.1 14.5 25.8 14.3 26.8L12 40.3C11.9 41 12.4 41.6 13.1 41.6H19.5C20.4 41.6 21.1 41 21.3 40.1L21.4 39.6L22.8 31.1L22.9 30.5C23.1 29.6 23.8 29 24.7 29H25.8C32.5 29 37.7 26.1 39.2 18.2C39.8 14.9 39.5 12.1 37.8 10.2C37.3 9.6 36.3 9.1 35.1 13.7Z" fill="#009cde"/>
+    <path d="M33.4 7.8C33.1 7.7 32.8 7.6 32.5 7.5C32.2 7.4 31.9 7.4 31.6 7.3C30.5 7.1 29.3 7 28 7H17C16.1 7 15.3 7.6 15.1 8.5L12.5 24.3L12.4 24.8C12.6 23.8 13.4 23.1 14.4 23.1H17.9C25.6 23.1 31.5 19.8 33.2 11.7C33.3 11.1 33.4 10.5 33.4 10C33.4 9.3 33.3 8.6 33.1 8C33.2 7.9 33.3 7.8 33.4 7.8Z" fill="#012169"/>
+  </svg>`;
+
+  const paypalLogoSmall = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 48" width="30" height="36">
+    <path d="M32.5 8.5C31.2 3.5 27 1 21 1H9.5C8.5 1 7.7 1.7 7.5 2.7L2 36.7C1.9 37.4 2.4 38 3.1 38H10.5L12.3 26.8C12.5 25.8 13.3 25.1 14.3 25.1H17.8C25.5 25.1 31.4 21.8 33.1 13.7C33.2 13.1 33.3 12.5 33.3 12C33.3 10.7 33 9.6 32.5 8.5Z" fill="#003087"/>
+    <path d="M35.1 13.7C33.4 21.8 27.5 25.1 19.8 25.1H16.3C15.3 25.1 14.5 25.8 14.3 26.8L12 40.3C11.9 41 12.4 41.6 13.1 41.6H19.5C20.4 41.6 21.1 41 21.3 40.1L21.4 39.6L22.8 31.1L22.9 30.5C23.1 29.6 23.8 29 24.7 29H25.8C32.5 29 37.7 26.1 39.2 18.2C39.8 14.9 39.5 12.1 37.8 10.2C37.3 9.6 36.3 9.1 35.1 13.7Z" fill="#009cde"/>
+    <path d="M33.4 7.8C33.1 7.7 32.8 7.6 32.5 7.5C32.2 7.4 31.9 7.4 31.6 7.3C30.5 7.1 29.3 7 28 7H17C16.1 7 15.3 7.6 15.1 8.5L12.5 24.3L12.4 24.8C12.6 23.8 13.4 23.1 14.4 23.1H17.9C25.6 23.1 31.5 19.8 33.2 11.7C33.3 11.1 33.4 10.5 33.4 10C33.4 9.3 33.3 8.6 33.1 8C33.2 7.9 33.3 7.8 33.4 7.8Z" fill="#012169"/>
+  </svg>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Payment Notification</title>
+  <title>PayPal Payment Notification</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f5f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f7fa;padding:40px 20px;">
+<body style="margin:0;padding:0;background-color:#f2f2f2;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f2f2;padding:20px 10px;">
     <tr>
       <td align="center">
-        <!-- Card -->
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
 
-          <!-- Header -->
+          <!-- Greeting row -->
           <tr>
-            <td style="background-color:#003087;padding:32px 40px;text-align:center;">
-              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <td style="background-color:#f2f2f2;padding:20px 0 10px 0;text-align:center;">
+              <p style="margin:0;font-size:15px;color:#444444;">Hello, ${recipientName}</p>
+            </td>
+          </tr>
+
+          <!-- White card with logo + blue header -->
+          <tr>
+            <td>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.12);">
+
+                <!-- Logo circle + blue gradient header -->
                 <tr>
-                  <td align="center">
-                    <span style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Pay</span><span style="font-size:26px;font-weight:800;color:#009cde;letter-spacing:-0.5px;">Send</span>
+                  <td style="background:linear-gradient(180deg,#0070ba 0%,#0070ba 55%,#003087 100%);padding:0;text-align:center;position:relative;">
+                    <!-- White circle behind logo -->
+                    <div style="display:inline-block;background:#ffffff;border-radius:50%;width:72px;height:72px;margin:20px auto 0 auto;line-height:72px;text-align:center;vertical-align:middle;">
+                      ${paypalLogoLarge}
+                    </div>
+                    <div style="height:36px;"></div>
                   </td>
                 </tr>
-              </table>
-            </td>
-          </tr>
 
-          <!-- Amount Banner -->
-          <tr>
-            <td style="background-color:#0070ba;padding:28px 40px;text-align:center;">
-              <p style="margin:0 0 4px 0;color:rgba(255,255,255,0.85);font-size:13px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Amount Received</p>
-              <p style="margin:0;color:#ffffff;font-size:48px;font-weight:800;letter-spacing:-1px;">$${displayAmount}</p>
-              <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.75);font-size:13px;">USD</p>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="padding:36px 40px;">
-              <p style="margin:0 0 6px 0;font-size:22px;font-weight:700;color:#1c1c1e;">Hello, ${recipientName}</p>
-              <p style="margin:0 0 28px 0;font-size:15px;color:#6b7280;line-height:1.6;">
-                ${fromLabel} has sent you a payment of <strong style="color:#0070ba;">$${displayAmount} USD</strong> on ${currentDate}.
-              </p>
-
-              <!-- Details Box -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border-radius:8px;border:1px solid #e8ecf0;margin-bottom:24px;">
+                <!-- "[Sender] sent you $X USD" -->
                 <tr>
-                  <td style="padding:20px 24px;">
+                  <td style="background-color:#ffffff;padding:28px 40px 8px 40px;text-align:center;">
+                    <p style="margin:0;font-size:28px;font-weight:800;color:#000000;line-height:1.3;">${fromLabel} sent you<br/>$${displayAmount} USD</p>
+                  </td>
+                </tr>
+
+                <!-- Payment Details -->
+                <tr>
+                  <td style="background-color:#ffffff;padding:24px 40px 0 40px;">
+                    <p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#0070ba;">Payment Details</p>
+
+                    <!-- Transaction ID row -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <td style="padding:6px 0;border-bottom:1px solid #eef1f5;">
+                        <td style="padding:10px 0;border-bottom:1px solid #e8e8e8;">
                           <table width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td style="font-size:13px;color:#6b7280;font-weight:500;">From</td>
-                              <td align="right" style="font-size:13px;color:#1c1c1e;font-weight:600;">${fromLabel}</td>
+                              <td style="font-size:14px;color:#666666;">Transaction ID</td>
+                              <td align="right" style="font-size:14px;color:#333333;">${transactionId}</td>
                             </tr>
                           </table>
                         </td>
                       </tr>
+                      <!-- Transaction Date row -->
                       <tr>
-                        <td style="padding:6px 0;border-bottom:1px solid #eef1f5;">
+                        <td style="padding:10px 0;border-bottom:2px dotted #cccccc;">
                           <table width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td style="font-size:13px;color:#6b7280;font-weight:500;">Payment Amount</td>
-                              <td align="right" style="font-size:13px;color:#1c1c1e;font-weight:700;">$${displayAmount} USD</td>
+                              <td style="font-size:14px;color:#666666;">Transaction date</td>
+                              <td align="right" style="font-size:14px;color:#333333;">${transactionDate}</td>
                             </tr>
                           </table>
                         </td>
                       </tr>
+                      <!-- Amount Received row -->
                       <tr>
-                        <td style="padding:6px 0;border-bottom:1px solid #eef1f5;">
+                        <td style="padding:14px 0;border-bottom:2px dotted #cccccc;">
                           <table width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td style="font-size:13px;color:#6b7280;font-weight:500;">Verification Amount</td>
-                              <td align="right" style="font-size:13px;color:#1c1c1e;font-weight:700;">$${displayVerification} USD</td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:6px 0;">
-                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                            <tr>
-                              <td style="font-size:13px;color:#6b7280;font-weight:500;">Date</td>
-                              <td align="right" style="font-size:13px;color:#1c1c1e;font-weight:600;">${currentDate}</td>
+                              <td style="font-size:15px;font-style:italic;font-weight:700;color:#333333;">Amount Received</td>
+                              <td align="right" style="font-size:15px;font-weight:700;color:#333333;">$${displayVerification} USD</td>
                             </tr>
                           </table>
                         </td>
@@ -109,51 +127,101 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                     </table>
                   </td>
                 </tr>
-              </table>
 
-              ${
-                note
-                  ? `<!-- Note -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fff8e7;border-radius:8px;border:1px solid #fde68a;margin-bottom:24px;">
+                ${note ? `
+                <!-- Terms and Conditions / Note -->
                 <tr>
-                  <td style="padding:16px 20px;">
-                    <p style="margin:0 0 6px 0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#92400e;">Note from Sender</p>
-                    <p style="margin:0;font-size:14px;color:#78350f;line-height:1.6;">${note}</p>
+                  <td style="background-color:#ffffff;padding:20px 40px 0 40px;">
+                    <p style="margin:0 0 8px 0;font-size:16px;font-weight:700;color:#333333;">Terms and Conditions</p>
+                    <p style="margin:0;font-size:14px;color:#555555;line-height:1.6;">${note}</p>
                   </td>
                 </tr>
-              </table>`
-                  : ""
-              }
+                ` : ""}
 
-              <!-- CTA Button -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+                <!-- Bottom PayPal logo inside card -->
                 <tr>
-                  <td align="center">
-                    <table cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td style="background-color:#0070ba;border-radius:6px;padding:0;">
-                          <a href="#" style="display:inline-block;padding:14px 40px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:6px;">
-                            Accept Payment
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="background-color:#ffffff;padding:28px 40px 24px 40px;text-align:center;">
+                    ${paypalLogoSmall}
                   </td>
                 </tr>
-              </table>
 
-              <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;text-align:center;">
-                If you did not expect this payment, you can safely ignore this email.<br/>
-                For security, never share your account details with anyone.
-              </p>
+              </table>
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Footer links -->
           <tr>
-            <td style="background-color:#f8fafc;border-top:1px solid #e8ecf0;padding:20px 40px;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#9ca3af;">
-                This is an automated payment notification. &copy; ${new Date().getFullYear()} PaySend. All rights reserved.
+            <td style="padding:24px 20px 12px 20px;text-align:center;">
+              <p style="margin:0 0 16px 0;font-size:14px;">
+                <a href="#" style="color:#0070ba;text-decoration:none;font-weight:500;">Help &amp; Contact</a>
+                <span style="color:#999999;margin:0 8px;">|</span>
+                <a href="#" style="color:#0070ba;text-decoration:none;font-weight:500;">Security</a>
+                <span style="color:#999999;margin:0 8px;">|</span>
+                <a href="#" style="color:#0070ba;text-decoration:none;font-weight:500;">Apps</a>
+              </p>
+
+              <!-- Social icons -->
+              <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 20px auto;">
+                <tr>
+                  <td style="padding:0 6px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="width:36px;height:36px;background-color:#bbbbbb;border-radius:50%;text-align:center;vertical-align:middle;">
+                          <span style="font-size:16px;color:#ffffff;line-height:36px;display:block;">&#120163;</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td style="padding:0 6px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="width:36px;height:36px;background-color:#bbbbbb;border-radius:50%;text-align:center;vertical-align:middle;">
+                          <span style="font-size:14px;color:#ffffff;line-height:36px;display:block;">&#9737;</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td style="padding:0 6px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="width:36px;height:36px;background-color:#bbbbbb;border-radius:50%;text-align:center;vertical-align:middle;">
+                          <span style="font-size:16px;color:#ffffff;font-weight:700;line-height:36px;display:block;">f</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td style="padding:0 6px;">
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="width:36px;height:36px;background-color:#bbbbbb;border-radius:50%;text-align:center;vertical-align:middle;">
+                          <span style="font-size:13px;color:#ffffff;font-weight:700;line-height:36px;display:block;">in</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 12px 0;font-size:13px;color:#555555;line-height:1.6;text-align:left;padding:0 10px;">
+                PayPal is committed to preventing fraudulent emails. Emails from PayPal will always contain your full name.<br/>
+                <a href="#" style="color:#0070ba;text-decoration:none;font-weight:500;">Learn to identify phishing</a>
+              </p>
+
+              <p style="margin:0 0 12px 0;font-size:13px;color:#555555;line-height:1.6;text-align:left;padding:0 10px;">
+                Please don't reply to this email. To get in touch with us, click <a href="#" style="color:#0070ba;text-decoration:none;font-weight:600;">Help &amp; Contact</a>.
+              </p>
+
+              <p style="margin:0 0 12px 0;font-size:13px;color:#555555;line-height:1.6;text-align:left;padding:0 10px;">
+                Not sure why you received this email? <a href="#" style="color:#0070ba;text-decoration:none;font-weight:600;">Learn more</a>
+              </p>
+
+              <p style="margin:0 0 12px 0;font-size:13px;color:#555555;line-height:1.6;text-align:left;padding:0 10px;">
+                Copyright &copy; 1999-${new Date().getFullYear()} PayPal, Inc. All rights reserved.<br/>
+                PayPal is located at <strong>2211 N. First St., San Jose, CA 95131</strong>.
+              </p>
+
+              <p style="margin:0;font-size:12px;color:#888888;text-align:left;padding:0 10px;">
+                PayPal RT000186:en_US(en-US):1.0.0:f518225a78354
               </p>
             </td>
           </tr>
@@ -162,6 +230,7 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
       </td>
     </tr>
   </table>
+
 </body>
 </html>`;
 }
