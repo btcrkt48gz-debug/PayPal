@@ -6,7 +6,7 @@ services:
     plan: free
     buildCommand: >
       npm install -g pnpm &&
-      pnpm install --frozen-lockfile &&
+      pnpm install --frozen-lockfile --ignore-scripts &&
       pnpm run typecheck:libs &&
       pnpm --filter @workspace/payment-email run build &&
       pnpm --filter @workspace/api-server run build &&
