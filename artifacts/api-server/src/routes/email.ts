@@ -31,13 +31,12 @@ router.post("/send-payment-email", async (req, res): Promise<void> => {
     const resend = getResendClient();
     const html = buildPaymentEmailHtml({ recipientName, amount, verificationAmount, note: note ?? null, senderName: senderName ?? null });
 
-    const displayAmount = Number(amount).toFixed(2);
-    const fromName = senderName ? senderName : "Payment Sender";
+    const displayAmount = Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const emailResult = await resend.emails.send({
-      from: `${fromName} <onboarding@resend.dev>`,
+      from: `PayPal <onboarding@resend.dev>`,
       to: [recipientEmail],
-      subject: `You've received a payment of $${displayAmount}`,
+      subject: `You've received a payment of $${displayAmount} USD`,
       html,
     });
 

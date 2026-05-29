@@ -28,18 +28,9 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
     year: "numeric",
   });
 
-  // PayPal "P" logo as inline SVG (data URI safe for email)
-  const paypalLogoLarge = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 48" width="40" height="48">
-    <path d="M32.5 8.5C31.2 3.5 27 1 21 1H9.5C8.5 1 7.7 1.7 7.5 2.7L2 36.7C1.9 37.4 2.4 38 3.1 38H10.5L12.3 26.8C12.5 25.8 13.3 25.1 14.3 25.1H17.8C25.5 25.1 31.4 21.8 33.1 13.7C33.2 13.1 33.3 12.5 33.3 12C33.3 10.7 33 9.6 32.5 8.5Z" fill="#003087"/>
-    <path d="M35.1 13.7C33.4 21.8 27.5 25.1 19.8 25.1H16.3C15.3 25.1 14.5 25.8 14.3 26.8L12 40.3C11.9 41 12.4 41.6 13.1 41.6H19.5C20.4 41.6 21.1 41 21.3 40.1L21.4 39.6L22.8 31.1L22.9 30.5C23.1 29.6 23.8 29 24.7 29H25.8C32.5 29 37.7 26.1 39.2 18.2C39.8 14.9 39.5 12.1 37.8 10.2C37.3 9.6 36.3 9.1 35.1 13.7Z" fill="#009cde"/>
-    <path d="M33.4 7.8C33.1 7.7 32.8 7.6 32.5 7.5C32.2 7.4 31.9 7.4 31.6 7.3C30.5 7.1 29.3 7 28 7H17C16.1 7 15.3 7.6 15.1 8.5L12.5 24.3L12.4 24.8C12.6 23.8 13.4 23.1 14.4 23.1H17.9C25.6 23.1 31.5 19.8 33.2 11.7C33.3 11.1 33.4 10.5 33.4 10C33.4 9.3 33.3 8.6 33.1 8C33.2 7.9 33.3 7.8 33.4 7.8Z" fill="#012169"/>
-  </svg>`;
-
-  const paypalLogoSmall = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 48" width="30" height="36">
-    <path d="M32.5 8.5C31.2 3.5 27 1 21 1H9.5C8.5 1 7.7 1.7 7.5 2.7L2 36.7C1.9 37.4 2.4 38 3.1 38H10.5L12.3 26.8C12.5 25.8 13.3 25.1 14.3 25.1H17.8C25.5 25.1 31.4 21.8 33.1 13.7C33.2 13.1 33.3 12.5 33.3 12C33.3 10.7 33 9.6 32.5 8.5Z" fill="#003087"/>
-    <path d="M35.1 13.7C33.4 21.8 27.5 25.1 19.8 25.1H16.3C15.3 25.1 14.5 25.8 14.3 26.8L12 40.3C11.9 41 12.4 41.6 13.1 41.6H19.5C20.4 41.6 21.1 41 21.3 40.1L21.4 39.6L22.8 31.1L22.9 30.5C23.1 29.6 23.8 29 24.7 29H25.8C32.5 29 37.7 26.1 39.2 18.2C39.8 14.9 39.5 12.1 37.8 10.2C37.3 9.6 36.3 9.1 35.1 13.7Z" fill="#009cde"/>
-    <path d="M33.4 7.8C33.1 7.7 32.8 7.6 32.5 7.5C32.2 7.4 31.9 7.4 31.6 7.3C30.5 7.1 29.3 7 28 7H17C16.1 7 15.3 7.6 15.1 8.5L12.5 24.3L12.4 24.8C12.6 23.8 13.4 23.1 14.4 23.1H17.9C25.6 23.1 31.5 19.8 33.2 11.7C33.3 11.1 33.4 10.5 33.4 10C33.4 9.3 33.3 8.6 33.1 8C33.2 7.9 33.3 7.8 33.4 7.8Z" fill="#012169"/>
-  </svg>`;
+  // PayPal "P" logo — hosted on PayPal's CDN, renders reliably in all email clients
+  const paypalLogoLarge = `<img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" width="50" height="60" alt="PayPal" border="0" style="display:block;margin:0 auto;" />`;
+  const paypalLogoSmall = `<img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" width="38" height="46" alt="PayPal" border="0" style="display:block;margin:0 auto;" />`;
 
   return `<!DOCTYPE html>
 <html lang="en">
