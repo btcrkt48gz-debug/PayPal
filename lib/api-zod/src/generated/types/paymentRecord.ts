@@ -16,6 +16,7 @@ export interface PaymentRecord {
   note?: string | null;
   /** @nullable */
   senderName?: string | null;
+  currency?: string;
   sentAt: Date;
   /** @nullable */
   emailId?: string | null;

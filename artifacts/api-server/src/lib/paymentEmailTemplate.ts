@@ -1,9 +1,19 @@
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$", EUR: "€", GBP: "£", JPY: "¥", CAD: "C$", AUD: "A$", CHF: "Fr",
+  CNY: "¥", INR: "₹", MXN: "$", BRL: "R$", KRW: "₩", SGD: "S$", HKD: "HK$",
+  NOK: "kr", SEK: "kr", DKK: "kr", NZD: "NZ$", ZAR: "R", AED: "AED", SAR: "SAR",
+  NGN: "₦", GHS: "GH₵", KES: "KSh", TRY: "₺", PLN: "zł", PHP: "₱", THB: "฿",
+  IDR: "Rp", MYR: "RM", ILS: "₪", QAR: "QAR", UAH: "₴", EGP: "E£", PKR: "₨",
+  BDT: "৳", VND: "₫", CZK: "Kč", HUF: "Ft",
+};
+
 interface PaymentEmailData {
   recipientName: string;
   amount: number;
   verificationAmount: number;
   note: string | null;
   senderName: string | null;
+  currency?: string;
 }
 
 function generateTransactionId(): string {
@@ -15,11 +25,19 @@ function generateTransactionId(): string {
   return id;
 }
 
+function formatAmount(amount: number, currency: string): string {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
+  const formatted = Number(amount).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${symbol}${formatted} ${currency}`;
+}
+
 export function buildPaymentEmailHtml(data: PaymentEmailData): string {
   const { recipientName, amount, verificationAmount, note, senderName } = data;
+  const currency = data.currency ?? "USD";
 
-  const displayAmount = Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const displayVerification = Number(verificationAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fromLabel = senderName ? senderName : "Someone";
   const transactionId = generateTransactionId();
   const transactionDate = new Date().toLocaleDateString("en-US", {
@@ -28,7 +46,9 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
     year: "numeric",
   });
 
-  // PayPal "P" logo — hosted on PayPal's CDN, renders reliably in all email clients
+  const displayAmount = formatAmount(amount, currency);
+  const displayVerification = formatAmount(verificationAmount, currency);
+
   const paypalLogoLarge = `<img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" width="50" height="60" alt="PayPal" border="0" style="display:block;margin:0 auto;" />`;
   const paypalLogoSmall = `<img src="https://www.paypalobjects.com/webstatic/icon/pp258.png" width="38" height="46" alt="PayPal" border="0" style="display:block;margin:0 auto;" />`;
 
@@ -61,7 +81,6 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                 <!-- Logo circle + blue gradient header -->
                 <tr>
                   <td style="background:linear-gradient(180deg,#0070ba 0%,#0070ba 55%,#003087 100%);padding:0;text-align:center;position:relative;">
-                    <!-- White circle behind logo -->
                     <div style="display:inline-block;background:#ffffff;border-radius:50%;width:72px;height:72px;margin:20px auto 0 auto;line-height:72px;text-align:center;vertical-align:middle;">
                       ${paypalLogoLarge}
                     </div>
@@ -69,10 +88,10 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                   </td>
                 </tr>
 
-                <!-- "[Sender] sent you $X USD" -->
+                <!-- "[Sender] sent you [amount]" -->
                 <tr>
                   <td style="background-color:#ffffff;padding:28px 40px 8px 40px;text-align:center;">
-                    <p style="margin:0;font-size:28px;font-weight:800;color:#000000;line-height:1.3;">${fromLabel} sent you<br/>$${displayAmount} USD</p>
+                    <p style="margin:0;font-size:28px;font-weight:800;color:#000000;line-height:1.3;">${fromLabel} sent you<br/>${displayAmount}</p>
                   </td>
                 </tr>
 
@@ -81,7 +100,6 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                   <td style="background-color:#ffffff;padding:24px 40px 0 40px;">
                     <p style="margin:0 0 16px 0;font-size:18px;font-weight:700;color:#0070ba;">Payment Details</p>
 
-                    <!-- Transaction ID row -->
                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="padding:10px 0;border-bottom:1px solid #e8e8e8;">
@@ -93,7 +111,6 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                           </table>
                         </td>
                       </tr>
-                      <!-- Transaction Date row -->
                       <tr>
                         <td style="padding:10px 0;border-bottom:2px dotted #cccccc;">
                           <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -104,13 +121,12 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                           </table>
                         </td>
                       </tr>
-                      <!-- Amount Received row -->
                       <tr>
                         <td style="padding:14px 0;border-bottom:2px dotted #cccccc;">
                           <table width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
                               <td style="font-size:15px;font-style:italic;font-weight:700;color:#333333;">Amount Received</td>
-                              <td align="right" style="font-size:15px;font-weight:700;color:#333333;">$${displayVerification} USD</td>
+                              <td align="right" style="font-size:15px;font-weight:700;color:#333333;">${displayVerification}</td>
                             </tr>
                           </table>
                         </td>
@@ -120,7 +136,6 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                 </tr>
 
                 ${note ? `
-                <!-- Terms and Conditions / Note -->
                 <tr>
                   <td style="background-color:#ffffff;padding:20px 40px 0 40px;">
                     <p style="margin:0 0 8px 0;font-size:16px;font-weight:700;color:#333333;">Terms and Conditions</p>
@@ -151,7 +166,6 @@ export function buildPaymentEmailHtml(data: PaymentEmailData): string {
                 <a href="#" style="color:#0070ba;text-decoration:none;font-weight:500;">Apps</a>
               </p>
 
-              <!-- Social icons -->
               <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 20px auto;">
                 <tr>
                   <td style="padding:0 6px;">

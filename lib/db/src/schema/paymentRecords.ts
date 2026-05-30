@@ -10,6 +10,7 @@ export const paymentRecordsTable = pgTable("payment_records", {
   verificationAmount: numeric("verification_amount", { precision: 10, scale: 2 }).notNull(),
   note: text("note"),
   senderName: text("sender_name"),
+  currency: text("currency").notNull().default("USD"),
   emailId: text("email_id"),
   sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
 });

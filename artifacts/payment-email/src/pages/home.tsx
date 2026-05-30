@@ -25,12 +25,62 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const CURRENCIES = [
+  { code: "USD", name: "US Dollar", symbol: "$" },
+  { code: "EUR", name: "Euro", symbol: "€" },
+  { code: "GBP", name: "British Pound", symbol: "£" },
+  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
+  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
+  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
+  { code: "CHF", name: "Swiss Franc", symbol: "Fr" },
+  { code: "CNY", name: "Chinese Yuan", symbol: "¥" },
+  { code: "INR", name: "Indian Rupee", symbol: "₹" },
+  { code: "MXN", name: "Mexican Peso", symbol: "$" },
+  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
+  { code: "KRW", name: "South Korean Won", symbol: "₩" },
+  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
+  { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
+  { code: "NOK", name: "Norwegian Krone", symbol: "kr" },
+  { code: "SEK", name: "Swedish Krona", symbol: "kr" },
+  { code: "DKK", name: "Danish Krone", symbol: "kr" },
+  { code: "NZD", name: "New Zealand Dollar", symbol: "NZ$" },
+  { code: "ZAR", name: "South African Rand", symbol: "R" },
+  { code: "AED", name: "UAE Dirham", symbol: "AED" },
+  { code: "SAR", name: "Saudi Riyal", symbol: "SAR" },
+  { code: "NGN", name: "Nigerian Naira", symbol: "₦" },
+  { code: "GHS", name: "Ghanaian Cedi", symbol: "GH₵" },
+  { code: "KES", name: "Kenyan Shilling", symbol: "KSh" },
+  { code: "TRY", name: "Turkish Lira", symbol: "₺" },
+  { code: "PLN", name: "Polish Zloty", symbol: "zł" },
+  { code: "PHP", name: "Philippine Peso", symbol: "₱" },
+  { code: "THB", name: "Thai Baht", symbol: "฿" },
+  { code: "IDR", name: "Indonesian Rupiah", symbol: "Rp" },
+  { code: "MYR", name: "Malaysian Ringgit", symbol: "RM" },
+  { code: "ILS", name: "Israeli Shekel", symbol: "₪" },
+  { code: "QAR", name: "Qatari Riyal", symbol: "QAR" },
+  { code: "UAH", name: "Ukrainian Hryvnia", symbol: "₴" },
+  { code: "EGP", name: "Egyptian Pound", symbol: "E£" },
+  { code: "PKR", name: "Pakistani Rupee", symbol: "₨" },
+  { code: "BDT", name: "Bangladeshi Taka", symbol: "৳" },
+  { code: "VND", name: "Vietnamese Dong", symbol: "₫" },
+  { code: "CZK", name: "Czech Koruna", symbol: "Kč" },
+  { code: "HUF", name: "Hungarian Forint", symbol: "Ft" },
+];
 
 const formSchema = z.object({
   recipientName: z.string().min(1, "Recipient name is required"),
   recipientEmail: z.string().email("Please enter a valid email address"),
-  amount: z.coerce.number().min(0.01, "Amount must be at least $0.01"),
-  verificationAmount: z.coerce.number().min(0.01, "Verification amount must be at least $0.01"),
+  currency: z.string().default("USD"),
+  amount: z.coerce.number().min(0.01, "Amount must be at least 0.01"),
+  verificationAmount: z.coerce.number().min(0.01, "Verification amount must be at least 0.01"),
   note: z.string().optional(),
   senderName: z.string().optional(),
 });
@@ -52,12 +102,16 @@ export default function Home() {
     defaultValues: {
       recipientName: "",
       recipientEmail: "",
+      currency: "USD",
       amount: 0,
       verificationAmount: 0,
       note: "",
       senderName: "",
     },
   });
+
+  const selectedCurrency = form.watch("currency");
+  const currencySymbol = CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol ?? "$";
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     sendEmailMutation.mutate(
@@ -69,6 +123,7 @@ export default function Home() {
           verificationAmount: values.verificationAmount,
           note: values.note || null,
           senderName: values.senderName || null,
+          currency: values.currency,
         },
       },
       {
@@ -90,11 +145,15 @@ export default function Home() {
             });
           }
         },
-        onError: (error) => {
+        onError: (error: unknown) => {
+          const message =
+            error && typeof error === "object" && "error" in error
+              ? String((error as { error: unknown }).error)
+              : "An unknown error occurred";
           toast({
             variant: "destructive",
             title: "Failed to send email",
-            description: error.error || "An unknown error occurred",
+            description: message,
           });
         },
       }
@@ -169,6 +228,33 @@ export default function Home() {
                     />
                   </div>
 
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currency</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-currency">
+                              <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CURRENCIES.map((c) => (
+                              <SelectItem key={c.code} value={c.code}>
+                                <span className="font-mono mr-2 text-muted-foreground">{c.code}</span>
+                                {c.name}
+                                <span className="ml-2 text-muted-foreground">{c.symbol}</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
@@ -178,7 +264,7 @@ export default function Home() {
                           <FormLabel>Payment Amount</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <span className="absolute left-3 top-2 text-sm font-medium text-muted-foreground">{currencySymbol}</span>
                               <Input 
                                 type="number" 
                                 step="0.01" 
@@ -204,7 +290,7 @@ export default function Home() {
                           <FormLabel>Verification Amount</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <span className="absolute left-3 top-2 text-sm font-medium text-muted-foreground">{currencySymbol}</span>
                               <Input 
                                 type="number" 
                                 step="0.01" 
@@ -331,8 +417,11 @@ export default function Home() {
                             </div>
                             <div className="flex flex-col items-end">
                               <span className="font-semibold font-mono text-sm">
-                                {formatCurrency(record.amount)}
+                                {formatCurrency(record.amount, record.currency ?? "USD")}
                               </span>
+                              {record.currency && record.currency !== "USD" && (
+                                <span className="text-[10px] text-muted-foreground font-mono">{record.currency}</span>
+                              )}
                               <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1">
                                 <CheckCircle2 className="w-3 h-3 text-primary" />
                                 Sent

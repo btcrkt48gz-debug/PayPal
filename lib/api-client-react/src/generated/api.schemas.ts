@@ -21,6 +21,7 @@ export interface PaymentEmailInput {
   note?: string | null;
   /** @nullable */
   senderName?: string | null;
+  currency?: string;
 }
 
 export interface SendEmailResult {
@@ -40,6 +41,7 @@ export interface PaymentRecord {
   note?: string | null;
   /** @nullable */
   senderName?: string | null;
+  currency?: string;
   sentAt: string;
   /** @nullable */
   emailId?: string | null;

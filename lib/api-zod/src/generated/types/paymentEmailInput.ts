@@ -18,4 +18,5 @@ export interface PaymentEmailInput {
   note?: string | null;
   /** @nullable */
   senderName?: string | null;
+  currency?: string;
 }

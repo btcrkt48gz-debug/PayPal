@@ -26,7 +26,7 @@ export const sendPaymentEmailBodyAmountMin = 0.01;
 
 export const sendPaymentEmailBodyVerificationAmountMin = 0.01;
 
-
+export const sendPaymentEmailBodyCurrencyDefault = `USD`;
 
 export const SendPaymentEmailBody = zod.object({
   "recipientName": zod.string().min(1),
@@ -34,7 +34,8 @@ export const SendPaymentEmailBody = zod.object({
   "amount": zod.number().min(sendPaymentEmailBodyAmountMin),
   "verificationAmount": zod.number().min(sendPaymentEmailBodyVerificationAmountMin),
   "note": zod.string().nullish(),
-  "senderName": zod.string().nullish()
+  "senderName": zod.string().nullish(),
+  "currency": zod.string().default(sendPaymentEmailBodyCurrencyDefault)
 })
 
 export const SendPaymentEmailResponse = zod.object({
@@ -56,6 +57,7 @@ export const GetPaymentHistoryResponseItem = zod.object({
   "verificationAmount": zod.number().optional(),
   "note": zod.string().nullish(),
   "senderName": zod.string().nullish(),
+  "currency": zod.string().optional(),
   "sentAt": zod.coerce.date(),
   "emailId": zod.string().nullish()
 })

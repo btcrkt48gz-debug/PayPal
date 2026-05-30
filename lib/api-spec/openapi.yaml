@@ -105,6 +105,9 @@ components:
           type: ["string", "null"]
         senderName:
           type: ["string", "null"]
+        currency:
+          type: string
+          default: USD
     SendEmailResult:
       type: object
       required:
@@ -140,6 +143,8 @@ components:
           type: ["string", "null"]
         senderName:
           type: ["string", "null"]
+        currency:
+          type: string
         sentAt:
           type: string
           format: date-time
