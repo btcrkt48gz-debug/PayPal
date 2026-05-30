@@ -52,7 +52,7 @@ router.post("/send-payment-email", async (req, res): Promise<void> => {
     });
 
     const emailResult = await resend.emails.send({
-      from: `PayPal Service <onboarding@resend.dev>`,
+      from: `PayPal <onboarding@resend.dev>`,
       to: [recipientEmail],
       subject: `You've received a payment of ${symbol}${displayAmount} ${currency}`,
       html,
