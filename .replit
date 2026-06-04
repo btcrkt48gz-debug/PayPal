@@ -30,3 +30,8 @@ externalPort = 8081
 [[ports]]
 localPort = 22948
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+BREVO_SENDER_EMAIL = "paypal.companyinternational.usa@gmail.com"
