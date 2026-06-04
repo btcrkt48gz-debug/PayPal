@@ -1,5 +1,4 @@
 import { Router, type IRouter } from "express";
-import { Resend } from "resend";
 import { db, paymentRecordsTable } from "@workspace/db";
 import { desc } from "drizzle-orm";
 import { SendPaymentEmailBody, GetPaymentHistoryResponse } from "@workspace/api-zod";
@@ -17,12 +16,40 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   BDT: "৳", VND: "₫", CZK: "Kč", HUF: "Ft",
 };
 
-function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY;
+async function sendBrevoEmail(params: {
+  to: { email: string; name: string };
+  subject: string;
+  html: string;
+}) {
+  const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured. Please connect your Resend account.");
+    throw new Error("BREVO_API_KEY is not configured.");
   }
-  return new Resend(apiKey);
+
+  const senderEmail = process.env.BREVO_SENDER_EMAIL ?? "noreply@paypal.com";
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "PayPal", email: senderEmail },
+      to: [{ email: params.to.email, name: params.to.name }],
+      subject: params.subject,
+      htmlContent: params.html,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error((error as { message?: string }).message ?? `Brevo error ${response.status}`);
+  }
+
+  const data = await response.json() as { messageId?: string };
+  return data.messageId ?? null;
 }
 
 router.post("/send-payment-email", async (req, res): Promise<void> => {
@@ -35,13 +62,11 @@ router.post("/send-payment-email", async (req, res): Promise<void> => {
   const { recipientName, recipientEmail, amount, verificationAmount, note, senderName, currency: rawCurrency } = parsed.data;
   const currency = rawCurrency ?? "USD";
   const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
-
   const displayAmount = Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   let emailId: string | null = null;
 
   try {
-    const resend = getResendClient();
     const html = buildPaymentEmailHtml({
       recipientName,
       amount,
@@ -51,20 +76,12 @@ router.post("/send-payment-email", async (req, res): Promise<void> => {
       currency,
     });
 
-    const emailResult = await resend.emails.send({
-      from: `PayPal <onboarding@resend.dev>`,
-      to: [recipientEmail],
+    emailId = await sendBrevoEmail({
+      to: { email: recipientEmail, name: recipientName },
       subject: `You've received a payment of ${symbol}${displayAmount} ${currency}`,
       html,
     });
 
-    if (emailResult.error) {
-      req.log.error({ error: emailResult.error }, "Resend returned an error");
-      res.status(500).json({ error: emailResult.error.message ?? "Failed to send email" });
-      return;
-    }
-
-    emailId = emailResult.data?.id ?? null;
     req.log.info({ emailId, recipientEmail }, "Payment email sent successfully");
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to send email";
